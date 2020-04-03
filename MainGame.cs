@@ -12,10 +12,12 @@ namespace Monogame1
 
         const float SKYRATIO = 2f / 3f;
         int screenWidth, screenHeight;
-        Texture2D grass;
+        Texture2D grass, startGameSplash, gameOverTexture;
+        SpriteFont scoreFont, stateFont;
         Sprite dino, broccoli;
         bool spaceDown, gameStarted, gameOver;
         float broccoliSpeedMultiplier, gravitySpeed, dinoSpeedX, dinoJumpY, score;
+
         Random random;
         public MainGame()
         {
@@ -42,7 +44,7 @@ namespace Monogame1
             dinoSpeedX = 1000f;
             dinoJumpY = -1200f;
             gravitySpeed = 30f;
-
+            gameOver = false;
             base.Initialize();
         }
 
@@ -52,7 +54,12 @@ namespace Monogame1
             grass = Content.Load<Texture2D>("grass");
             dino = new Sprite(GraphicsDevice, Content.Load<Texture2D>("ninja-cat-dino"), 1f);
             broccoli = new Sprite(GraphicsDevice, Content.Load<Texture2D>("broccoli"), 0.2f);
-            // TODO: use this.Content to load your game content here
+            startGameSplash = Content.Load<Texture2D>("start-splash");
+            gameOverTexture = Content.Load<Texture2D>("game-over");
+            scoreFont = Content.Load<SpriteFont>("Score");
+            stateFont = Content.Load<SpriteFont>("GameState");
+
+
         }
 
         protected override void UnloadContent()
@@ -139,6 +146,11 @@ namespace Monogame1
             else
                 dino.dX = 0;
 
+            if (gameOver && state.IsKeyDown(Keys.Enter))
+            {
+                StartGame();
+                gameOver = false;
+            }
         }
         protected override void Update(GameTime gameTime)
         {
@@ -172,6 +184,16 @@ namespace Monogame1
                 SpawnBroccoli();
                 score++;
             }
+
+            if (gameOver)
+            {
+                dino.dX = 0;
+                dino.dY = 0;
+                broccoli.dX = 0;
+                broccoli.dY = 0;
+                broccoli.dA = 0;
+            }
+            if (dino.RectangleCollision(broccoli)) gameOver = true;
             base.Update(gameTime);
         }
 
@@ -181,8 +203,31 @@ namespace Monogame1
 
             spriteBatch.Begin(samplerState: SamplerState.PointClamp);
             spriteBatch.Draw(grass, new Rectangle(0, (int)(screenHeight * SKYRATIO), screenWidth, screenHeight), Color.White);
+            if (gameOver)
+            {
+                spriteBatch.Draw(gameOverTexture, new Vector2(screenWidth / 2 - gameOverTexture.Width / 2, screenHeight / 4 - gameOverTexture.Width / 2), Color.White);
+                String pressEnter = "Press Enter to restart!";
+
+                Vector2 pressEnterSize = stateFont.MeasureString(pressEnter);
+
+                spriteBatch.DrawString(stateFont, pressEnter, new Vector2(screenWidth / 2 - pressEnterSize.X / 2, screenHeight - 200), Color.White);
+            }
             broccoli.Draw(spriteBatch);
             dino.Draw(spriteBatch);
+            spriteBatch.DrawString(scoreFont, score.ToString(), new Vector2(screenWidth - 100, 50), Color.Black);
+
+            if (!gameStarted)
+            {
+                spriteBatch.Draw(startGameSplash, new Rectangle(0, 0, screenWidth, screenHeight), Color.White);
+                var title = "VEGGIE JUMP";
+                var pressSpace = "Press Space to start";
+
+                Vector2 titleSize = stateFont.MeasureString(title);
+                Vector2 pressSpaceSize = stateFont.MeasureString(pressSpace);
+
+                spriteBatch.DrawString(stateFont, title, new Vector2(screenWidth / 2 - titleSize.X / 2, screenHeight / 3), Color.ForestGreen);
+                spriteBatch.DrawString(stateFont, pressSpace, new Vector2(screenWidth / 2 - pressSpaceSize.X / 2, screenHeight / 2), Color.White);
+            }
             spriteBatch.End();
             // TODO: Add your drawing code here
 
